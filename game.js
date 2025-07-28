@@ -580,12 +580,6 @@ function renderTunnel() {
     const normalLoc = gl.getUniformLocation(shaderProgram, 'u_normalMatrix');
     const materialLoc = gl.getUniformLocation(shaderProgram, 'u_materialType');
     
-    const modelMatrix = createMatrix4();
-    identity(modelMatrix);
-    translate(modelMatrix, modelMatrix, [0, 0, -25]);
-    
-    gl.uniformMatrix4fv(modelLoc, false, modelMatrix);
-    gl.uniformMatrix4fv(normalLoc, false, modelMatrix);
     gl.uniform1i(materialLoc, 0); // Wall material
     
     // Bind tunnel geometry
@@ -606,7 +600,23 @@ function renderTunnel() {
     gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 0, 0);
     
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tunnelBuffer.indices);
-    gl.drawElements(gl.TRIANGLES, tunnelBuffer.indexCount, gl.UNSIGNED_SHORT, 0);
+    
+    // Render multiple tunnel segments to create continuous tunnel
+    const tunnelLength = 50; // Length of each tunnel segment
+    const currentZ = cameraPos[2];
+    const startSegment = Math.floor((currentZ - 25) / tunnelLength);
+    const endSegment = startSegment + 3; // Render 3 segments ahead
+    
+    for (let segment = startSegment; segment <= endSegment; segment++) {
+        const modelMatrix = createMatrix4();
+        identity(modelMatrix);
+        translate(modelMatrix, modelMatrix, [0, 0, segment * tunnelLength - 25]);
+        
+        gl.uniformMatrix4fv(modelLoc, false, modelMatrix);
+        gl.uniformMatrix4fv(normalLoc, false, modelMatrix);
+        
+        gl.drawElements(gl.TRIANGLES, tunnelBuffer.indexCount, gl.UNSIGNED_SHORT, 0);
+    }
 }
 
 function renderObstacles() {
