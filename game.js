@@ -448,6 +448,7 @@ function updateGame(deltaTime) {
     // Wall collision
     if (gameState.playerY > 1.8 || gameState.playerY < -1.8) {
         gameState.life = Math.max(0, gameState.life - 5);
+        showDamageFlash();
         gameState.playerY = Math.max(-1.8, Math.min(1.8, gameState.playerY));
         gameState.playerVelocity = 0;
     }
@@ -488,6 +489,7 @@ function updateGame(deltaTime) {
         
         if (distance < 0.5) {
             gameState.life = Math.max(0, gameState.life - 10);
+            showDamageFlash();
             obstacles.splice(index, 1);
         }
         
@@ -513,6 +515,18 @@ function updateUI() {
     
     const highScore = parseInt(localStorage.getItem('highScore') || '0');
     document.getElementById('highScore').textContent = highScore;
+}
+
+function showDamageFlash() {
+    const flashElement = document.getElementById('damageFlash');
+    
+    // Apply the flash effect immediately
+    flashElement.classList.add('active');
+    
+    // Remove the effect after a short delay to start the fade out
+    setTimeout(() => {
+        flashElement.classList.remove('active');
+    }, 200);
 }
 
 function showGameOver() {

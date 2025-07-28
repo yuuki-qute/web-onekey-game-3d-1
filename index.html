@@ -90,10 +90,29 @@
             color: white;
             font-size: 14px;
         }
+        
+        .damage-flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(255, 0, 0, 0);
+            pointer-events: none;
+            z-index: 200;
+            transition: background 0.2s ease-out;
+        }
+        
+        .damage-flash.active {
+            background: rgba(255, 0, 0, 1.0);
+        }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
+    
+    <!-- Damage flash overlay -->
+    <div class="damage-flash" id="damageFlash"></div>
     
     <div class="ui">
         <div class="life-bar">
