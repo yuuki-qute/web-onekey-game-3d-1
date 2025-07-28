@@ -33,12 +33,42 @@
             overflow: hidden;
             font-family: 'Courier New', 'Monaco', 'Lucida Console', monospace;
             color: #00ff00;
+            /* モバイルブラウザのコンテキストメニュー抑制 */
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            /* タップハイライト無効化 */
+            -webkit-tap-highlight-color: transparent;
+            /* 長押し抑制 */
+            -webkit-touch-callout: none;
+            /* テキスト選択禁止 */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
         
         canvas {
             display: block;
             width: 100vw;
             height: 100vh;
+            /* モバイルでのコンテキストメニュー抑制 */
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            /* タップハイライト無効化 */
+            -webkit-tap-highlight-color: transparent;
+            /* ドラッグ無効化 */
+            -webkit-user-drag: none;
+            -khtml-user-drag: none;
+            -moz-user-drag: none;
+            -o-user-drag: none;
         }
         
         .ui {

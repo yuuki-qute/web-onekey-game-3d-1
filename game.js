@@ -722,6 +722,45 @@ function setupInput() {
         e.preventDefault();
         keys['Touch'] = false;
     });
+    
+    // モバイルブラウザでのコンテキストメニュー抑制
+    document.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        return false;
+    });
+    
+    // 長押しコンテキストメニュー抑制
+    document.addEventListener('selectstart', (e) => {
+        e.preventDefault();
+        return false;
+    });
+    
+    // iOS Safariでの長押しメニュー抑制
+    document.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 1) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+    
+    // Android Chromeでの長押しメニュー抑制
+    let touchTimeout;
+    document.addEventListener('touchstart', (e) => {
+        touchTimeout = setTimeout(() => {
+            // 長押し時の処理をキャンセル
+        }, 500);
+    });
+    
+    document.addEventListener('touchend', (e) => {
+        if (touchTimeout) {
+            clearTimeout(touchTimeout);
+        }
+    });
+    
+    document.addEventListener('touchmove', (e) => {
+        if (touchTimeout) {
+            clearTimeout(touchTimeout);
+        }
+    });
 }
 
 // Calculate difficulty multiplier based on score
@@ -1087,6 +1126,30 @@ function init() {
     
     // Setup input
     setupInput();
+    
+    // Canvas専用のコンテキストメニュー抑制
+    canvas.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        return false;
+    });
+    
+    canvas.addEventListener('selectstart', (e) => {
+        e.preventDefault();
+        return false;
+    });
+    
+    // canvasでの長押しメニュー完全抑制
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+    }, { passive: false });
+    
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+    }, { passive: false });
+    
+    canvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+    }, { passive: false });
     
     // Setup fullscreen button event listener (once)
     const fullscreenBtn = document.getElementById('fullscreenBtn');
