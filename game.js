@@ -1,6 +1,7 @@
 // Game variables
 let canvas, gl;
 let shaderProgram, ssaoProgram;
+let audioContext;
 let gameState = {
     life: 100,
     score: 0,
@@ -142,6 +143,113 @@ function initGL() {
     gl.enable(gl.CULL_FACE);
     
     return true;
+}
+
+// Initialize Audio Context
+function initAudio() {
+    try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        return true;
+    } catch (error) {
+        console.warn('Web Audio API not supported:', error);
+        return false;
+    }
+}
+
+// Play collision sound effect
+function playCollisionSound(type = 'obstacle') {
+    if (!audioContext) return;
+    
+    // Resume audio context if suspended (required for autoplay policy)
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+    
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    if (type === 'obstacle') {
+        // Higher pitched, shorter sound for obstacles
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.1);
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+        oscillator.type = 'square';
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.1);
+    } else if (type === 'wall') {
+        // Lower pitched, slightly longer sound for walls
+        oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.15);
+        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.15);
+        oscillator.type = 'sawtooth';
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.15);
+    }
+}
+
+// Play melody for game events
+function playMelody(type = 'start') {
+    if (!audioContext) return;
+    
+    // Resume audio context if suspended
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+    
+    let notes = [];
+    let noteDuration = 0.2;
+    let baseVolume = 0.15;
+    
+    if (type === 'start') {
+        // Uplifting start melody: C-E-G-C (major chord progression)
+        notes = [
+            { freq: 523.25, duration: 0.15 }, // C5
+            { freq: 659.25, duration: 0.15 }, // E5
+            { freq: 783.99, duration: 0.15 }, // G5
+            { freq: 1046.50, duration: 0.3 }  // C6 (longer)
+        ];
+    } else if (type === 'gameOver') {
+        // Descending game over melody: G-F-E-D-C
+        notes = [
+            { freq: 783.99, duration: 0.2 }, // G5
+            { freq: 698.46, duration: 0.2 }, // F5
+            { freq: 659.25, duration: 0.2 }, // E5
+            { freq: 587.33, duration: 0.2 }, // D5
+            { freq: 523.25, duration: 0.4 }  // C5 (longer)
+        ];
+        baseVolume = 0.12; // Slightly quieter for game over
+    }
+    
+    let currentTime = audioContext.currentTime;
+    
+    notes.forEach((note, index) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.setValueAtTime(note.freq, currentTime);
+        oscillator.type = 'square';
+        
+        // Envelope: attack, sustain, release
+        gainNode.gain.setValueAtTime(0, currentTime);
+        gainNode.gain.linearRampToValueAtTime(baseVolume, currentTime + 0.02); // Quick attack
+        gainNode.gain.setValueAtTime(baseVolume * 0.8, currentTime + note.duration * 0.7); // Sustain
+        gainNode.gain.exponentialRampToValueAtTime(0.001, currentTime + note.duration); // Release
+        
+        oscillator.start(currentTime);
+        oscillator.stop(currentTime + note.duration);
+        
+        currentTime += note.duration;
+    });
 }
 
 function resizeCanvas() {
@@ -648,6 +756,7 @@ function updateGame(deltaTime) {
     if (gameState.playerY > 1.8 || gameState.playerY < -1.8) {
         gameState.life = Math.max(0, gameState.life - 10);
         showDamageFlash();
+        playCollisionSound('wall');
 
         // Bounce effect - reverse velocity with some damping
         if (gameState.playerY > 0) {
@@ -704,6 +813,7 @@ function updateGame(deltaTime) {
         if (distance < 0.5) {
             gameState.life = Math.max(0, gameState.life - 20);
             showDamageFlash();
+            playCollisionSound('obstacle');
             obstacles.splice(index, 1);
         }
         
@@ -761,6 +871,9 @@ function showGameOver() {
         localStorage.setItem('highScore', gameState.score.toString());
     }
     
+    // Play game over melody
+    playMelody('gameOver');
+    
     document.getElementById('finalScore').textContent = gameState.score;
     document.getElementById('finalHighScore').textContent = Math.max(highScore, gameState.score);
     document.getElementById('gameOver').style.display = 'block';
@@ -783,6 +896,9 @@ function startGame() {
     gameState.showTitle = false;
     gameState.gameRunning = true;
     document.getElementById('titleScreen').style.display = 'none';
+    
+    // Play start melody
+    playMelody('start');
     
     // Show difficulty display when game starts
     const difficultyElement = document.querySelector('.difficulty');
@@ -955,6 +1071,9 @@ function init() {
     if (!initGL()) {
         return;
     }
+    
+    // Initialize audio
+    initAudio();
     
     // Create shader program
     shaderProgram = createProgram(vertexShaderSource, fragmentShaderSource);
