@@ -74,7 +74,7 @@ const fragmentShaderSource = `
         float lines = abs(fract(p.x * 0.5) - 0.5) + abs(fract(p.y * 0.5) - 0.5);
         pattern = mix(pattern, lines, 0.3);
         
-        return vec3(0.2 + pattern * 0.3, 0.3 + pattern * 0.2, 0.5 + pattern * 0.3);
+        return vec3(0.3 + pattern * 0.2, 0.4 + pattern * 0.2, 0.7 + pattern * 0.2);
     }
     
     vec3 metalShading(vec3 normal, vec3 viewDir, vec3 lightDir) {
@@ -450,12 +450,64 @@ function createIcosahedron() {
         4, 9, 5,  2, 4, 11,  6, 2, 10,  8, 6, 7,  9, 8, 1
     ];
     
-    // Create wireframe edges by extracting unique edges from triangles
-    const edges = new Set();
+    // Calculate flat normals (per-face)
+    const normals = [];
     for (let i = 0; i < indices.length; i += 3) {
-        const a = indices[i];
-        const b = indices[i + 1];
-        const c = indices[i + 2];
+        const i1 = indices[i] * 3;
+        const i2 = indices[i + 1] * 3;
+        const i3 = indices[i + 2] * 3;
+        
+        // Get triangle vertices
+        const v1 = [positions[i1], positions[i1 + 1], positions[i1 + 2]];
+        const v2 = [positions[i2], positions[i2 + 1], positions[i2 + 2]];
+        const v3 = [positions[i3], positions[i3 + 1], positions[i3 + 2]];
+        
+        // Calculate face normal using cross product
+        const edge1 = [v2[0] - v1[0], v2[1] - v1[1], v2[2] - v1[2]];
+        const edge2 = [v3[0] - v1[0], v3[1] - v1[1], v3[2] - v1[2]];
+        
+        const normal = [
+            edge1[1] * edge2[2] - edge1[2] * edge2[1],
+            edge1[2] * edge2[0] - edge1[0] * edge2[2],
+            edge1[0] * edge2[1] - edge1[1] * edge2[0]
+        ];
+        
+        // Normalize
+        const length = Math.sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
+        if (length > 0) {
+            normal[0] /= length;
+            normal[1] /= length;
+            normal[2] /= length;
+        }
+        
+        // Add same normal for all three vertices of the triangle
+        normals.push(normal[0], normal[1], normal[2]);
+        normals.push(normal[0], normal[1], normal[2]);
+        normals.push(normal[0], normal[1], normal[2]);
+    }
+    
+    // Rebuild positions and texCoords for flat shading
+    const flatPositions = [];
+    const flatTexCoords = [];
+    for (let i = 0; i < indices.length; i++) {
+        const vertIndex = indices[i] * 3;
+        flatPositions.push(positions[vertIndex], positions[vertIndex + 1], positions[vertIndex + 2]);
+        flatTexCoords.push(0.5, 0.5);
+    }
+    
+    // Update indices for flat shading (sequential)
+    const flatIndices = [];
+    for (let i = 0; i < indices.length; i++) {
+        flatIndices.push(i);
+    }
+    
+    // Create wireframe edges by extracting unique edges from triangles
+    // Use flatIndices for wireframe to match flat shading vertex data
+    const edges = new Set();
+    for (let i = 0; i < flatIndices.length; i += 3) {
+        const a = flatIndices[i];
+        const b = flatIndices[i + 1];
+        const c = flatIndices[i + 2];
         
         // Add edges (ensure consistent ordering)
         edges.add(Math.min(a, b) + ',' + Math.max(a, b));
@@ -469,24 +521,11 @@ function createIcosahedron() {
         wireframeIndices.push(a, b);
     });
     
-    // Calculate normals
-    const normals = [];
-    for (let i = 0; i < positions.length; i += 3) {
-        const x = positions[i];
-        const y = positions[i + 1];
-        const z = positions[i + 2];
-        const length = Math.sqrt(x * x + y * y + z * z);
-        normals.push(x / length, y / length, z / length);
-    }
-    
-    const texCoords = [];
-    for (let i = 0; i < positions.length / 3; i++) {
-        texCoords.push(0.5, 0.5);
-    }
+    const texCoords = flatTexCoords;
     
     const positionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(flatPositions), gl.STATIC_DRAW);
     
     const normalBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
@@ -498,7 +537,7 @@ function createIcosahedron() {
     
     const indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(flatIndices), gl.STATIC_DRAW);
     
     const wireframeIndexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, wireframeIndexBuffer);
@@ -509,7 +548,7 @@ function createIcosahedron() {
         normal: normalBuffer,
         texCoord: texCoordBuffer,
         indices: indexBuffer,
-        indexCount: indices.length,
+        indexCount: flatIndices.length,
         wireframeIndices: wireframeIndexBuffer,
         wireframeIndexCount: wireframeIndices.length
     };
@@ -764,7 +803,7 @@ function render() {
     
     gl.uniformMatrix4fv(projectionLoc, false, projectionMatrix);
     gl.uniformMatrix4fv(viewLoc, false, viewMatrix);
-    gl.uniform3f(lightDirLoc, 1.0, -1.0, -1.0);
+    gl.uniform3f(lightDirLoc, 0.5, -0.866, -1.0);
     gl.uniform3f(cameraPosLoc, cameraPos[0], cameraPos[1], cameraPos[2]);
     gl.uniform1f(timeLoc, gameState.time);
     
