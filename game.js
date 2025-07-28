@@ -427,6 +427,33 @@ function setupInput() {
     document.addEventListener('keyup', (e) => {
         keys[e.code] = false;
     });
+    
+    // Mouse input
+    document.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        keys['MouseClick'] = true;
+    });
+    
+    document.addEventListener('mouseup', (e) => {
+        e.preventDefault();
+        keys['MouseClick'] = false;
+    });
+    
+    // Touch input for mobile devices
+    document.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        keys['Touch'] = true;
+    });
+    
+    document.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        keys['Touch'] = false;
+    });
+    
+    document.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        keys['Touch'] = false;
+    });
 }
 
 // Game logic
@@ -436,7 +463,7 @@ function updateGame(deltaTime) {
     gameState.time += deltaTime;
     
     // Player movement
-    if (keys['Space']) {
+    if (keys['Space'] || keys['Touch'] || keys['MouseClick']) {
         gameState.playerVelocity += 0.002;
     } else {
         gameState.playerVelocity -= 0.002;
