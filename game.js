@@ -646,7 +646,7 @@ function updateGame(deltaTime) {
     
     // Wall collision
     if (gameState.playerY > 1.8 || gameState.playerY < -1.8) {
-        gameState.life = Math.max(0, gameState.life - 5);
+        gameState.life = Math.max(0, gameState.life - 10);
         showDamageFlash();
 
         // Bounce effect - reverse velocity with some damping
@@ -702,7 +702,7 @@ function updateGame(deltaTime) {
         const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
         
         if (distance < 0.5) {
-            gameState.life = Math.max(0, gameState.life - 10);
+            gameState.life = Math.max(0, gameState.life - 20);
             showDamageFlash();
             obstacles.splice(index, 1);
         }
