@@ -61,7 +61,7 @@ const fragmentShaderSource = `
     uniform vec3 u_lightDirection;
     uniform vec3 u_cameraPos;
     uniform float u_time;
-    uniform int u_materialType; // 0: wall, 1: metal obstacle
+    uniform int u_materialType; // 0: wall, 1: metal obstacle, 2: wireframe
     
     vec3 geometricPattern(vec2 uv) {
         float scale = 8.0;
@@ -99,9 +99,12 @@ const fragmentShaderSource = `
         if (u_materialType == 0) {
             // Wall material with geometric pattern
             color = geometricPattern(v_texCoord);
-        } else {
+        } else if (u_materialType == 1) {
             // Metal obstacle material
             color = metalShading(normal, viewDir, lightDir);
+        } else if (u_materialType == 2) {
+            // Bright green wireframe
+            color = vec3(0.2, 1.0, 0.2);
         }
         
         // Basic lighting
@@ -109,7 +112,12 @@ const fragmentShaderSource = `
         vec3 ambient = color * 0.3;
         vec3 diffuse = color * NdotL * 0.7;
         
-        color = ambient + diffuse;
+        // Skip lighting for wireframe - keep it bright
+        if (u_materialType == 2) {
+            color = color; // Keep original bright color
+        } else {
+            color = ambient + diffuse;
+        }
         
         gl_FragColor = vec4(color, 1.0);
     }
@@ -265,6 +273,72 @@ function scale(out, a, v) {
     return out;
 }
 
+function rotateX(out, a, rad) {
+    const s = Math.sin(rad);
+    const c = Math.cos(rad);
+    const a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
+    const a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
+    
+    if (a !== out) {
+        out[0] = a[0]; out[1] = a[1]; out[2] = a[2]; out[3] = a[3];
+        out[12] = a[12]; out[13] = a[13]; out[14] = a[14]; out[15] = a[15];
+    }
+    
+    out[4] = a10 * c + a20 * s;
+    out[5] = a11 * c + a21 * s;
+    out[6] = a12 * c + a22 * s;
+    out[7] = a13 * c + a23 * s;
+    out[8] = a20 * c - a10 * s;
+    out[9] = a21 * c - a11 * s;
+    out[10] = a22 * c - a12 * s;
+    out[11] = a23 * c - a13 * s;
+    return out;
+}
+
+function rotateY(out, a, rad) {
+    const s = Math.sin(rad);
+    const c = Math.cos(rad);
+    const a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
+    const a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
+    
+    if (a !== out) {
+        out[4] = a[4]; out[5] = a[5]; out[6] = a[6]; out[7] = a[7];
+        out[12] = a[12]; out[13] = a[13]; out[14] = a[14]; out[15] = a[15];
+    }
+    
+    out[0] = a00 * c - a20 * s;
+    out[1] = a01 * c - a21 * s;
+    out[2] = a02 * c - a22 * s;
+    out[3] = a03 * c - a23 * s;
+    out[8] = a00 * s + a20 * c;
+    out[9] = a01 * s + a21 * c;
+    out[10] = a02 * s + a22 * c;
+    out[11] = a03 * s + a23 * c;
+    return out;
+}
+
+function rotateZ(out, a, rad) {
+    const s = Math.sin(rad);
+    const c = Math.cos(rad);
+    const a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
+    const a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
+    
+    if (a !== out) {
+        out[8] = a[8]; out[9] = a[9]; out[10] = a[10]; out[11] = a[11];
+        out[12] = a[12]; out[13] = a[13]; out[14] = a[14]; out[15] = a[15];
+    }
+    
+    out[0] = a00 * c + a10 * s;
+    out[1] = a01 * c + a11 * s;
+    out[2] = a02 * c + a12 * s;
+    out[3] = a03 * c + a13 * s;
+    out[4] = a10 * c - a00 * s;
+    out[5] = a11 * c - a01 * s;
+    out[6] = a12 * c - a02 * s;
+    out[7] = a13 * c - a03 * s;
+    return out;
+}
+
 // Create tunnel geometry
 function createTunnel() {
     const segments = 100;
@@ -376,6 +450,25 @@ function createIcosahedron() {
         4, 9, 5,  2, 4, 11,  6, 2, 10,  8, 6, 7,  9, 8, 1
     ];
     
+    // Create wireframe edges by extracting unique edges from triangles
+    const edges = new Set();
+    for (let i = 0; i < indices.length; i += 3) {
+        const a = indices[i];
+        const b = indices[i + 1];
+        const c = indices[i + 2];
+        
+        // Add edges (ensure consistent ordering)
+        edges.add(Math.min(a, b) + ',' + Math.max(a, b));
+        edges.add(Math.min(b, c) + ',' + Math.max(b, c));
+        edges.add(Math.min(c, a) + ',' + Math.max(c, a));
+    }
+    
+    const wireframeIndices = [];
+    edges.forEach(edge => {
+        const [a, b] = edge.split(',').map(Number);
+        wireframeIndices.push(a, b);
+    });
+    
     // Calculate normals
     const normals = [];
     for (let i = 0; i < positions.length; i += 3) {
@@ -407,12 +500,18 @@ function createIcosahedron() {
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
     
+    const wireframeIndexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, wireframeIndexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(wireframeIndices), gl.STATIC_DRAW);
+    
     return {
         position: positionBuffer,
         normal: normalBuffer,
         texCoord: texCoordBuffer,
         indices: indexBuffer,
-        indexCount: indices.length
+        indexCount: indices.length,
+        wireframeIndices: wireframeIndexBuffer,
+        wireframeIndexCount: wireframeIndices.length
     };
 }
 
@@ -524,13 +623,20 @@ function updateGame(deltaTime) {
             x: (Math.random() - 0.5) * 3,
             y: (Math.random() - 0.5) * 3,
             z: cameraPos[2] + 20,
-            rotation: 0
+            rotationX: Math.random() * Math.PI * 2,
+            rotationY: Math.random() * Math.PI * 2,
+            rotationZ: Math.random() * Math.PI * 2,
+            rotationSpeedX: (Math.random() - 0.5) * 0.004,
+            rotationSpeedY: (Math.random() - 0.5) * 0.004,
+            rotationSpeedZ: (Math.random() - 0.5) * 0.004
         });
     }
     
     // Update obstacles
     obstacles.forEach((obstacle, index) => {
-        obstacle.rotation += deltaTime * 0.002;
+        obstacle.rotationX += obstacle.rotationSpeedX * deltaTime;
+        obstacle.rotationY += obstacle.rotationSpeedY * deltaTime;
+        obstacle.rotationZ += obstacle.rotationSpeedZ * deltaTime;
         
         // Check collision with player
         const dx = obstacle.x - 0;
@@ -710,8 +816,6 @@ function renderObstacles() {
     const normalLoc = gl.getUniformLocation(shaderProgram, 'u_normalMatrix');
     const materialLoc = gl.getUniformLocation(shaderProgram, 'u_materialType');
     
-    gl.uniform1i(materialLoc, 1); // Metal material
-    
     const positionLoc = gl.getAttribLocation(shaderProgram, 'a_position');
     const normalLoc2 = gl.getAttribLocation(shaderProgram, 'a_normal');
     const texCoordLoc = gl.getAttribLocation(shaderProgram, 'a_texCoord');
@@ -720,6 +824,9 @@ function renderObstacles() {
         const modelMatrix = createMatrix4();
         identity(modelMatrix);
         translate(modelMatrix, modelMatrix, [obstacle.x, obstacle.y, obstacle.z]);
+        rotateX(modelMatrix, modelMatrix, obstacle.rotationX);
+        rotateY(modelMatrix, modelMatrix, obstacle.rotationY);
+        rotateZ(modelMatrix, modelMatrix, obstacle.rotationZ);
         scale(modelMatrix, modelMatrix, [0.3, 0.3, 0.3]);
         
         gl.uniformMatrix4fv(modelLoc, false, modelMatrix);
@@ -737,8 +844,17 @@ function renderObstacles() {
         gl.enableVertexAttribArray(texCoordLoc);
         gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 0, 0);
         
+        // First pass: Draw filled polygons
+        gl.uniform1i(materialLoc, 1); // Metal material for faces
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obstacleBuffers[0].indices);
         gl.drawElements(gl.TRIANGLES, obstacleBuffers[0].indexCount, gl.UNSIGNED_SHORT, 0);
+        
+        // Second pass: Draw wireframe edges
+        if (obstacleBuffers[0].wireframeIndices) {
+            gl.uniform1i(materialLoc, 2); // Wireframe material
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obstacleBuffers[0].wireframeIndices);
+            gl.drawElements(gl.LINES, obstacleBuffers[0].wireframeIndexCount, gl.UNSIGNED_SHORT, 0);
+        }
     });
 }
 
