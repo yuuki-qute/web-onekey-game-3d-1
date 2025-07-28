@@ -62,35 +62,13 @@ const fragmentShaderSource = `
     uniform float u_time;
     uniform int u_materialType; // 0: wall, 1: metal obstacle
     
-    // SSAO parameters
-    uniform float u_ssaoRadius;
-    uniform float u_ssaoIntensity;
-    
-    float random(vec2 co) {
-        return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
-    }
-    
-    float noise(vec2 p) {
-        vec2 i = floor(p);
-        vec2 f = fract(p);
-        f = f * f * (3.0 - 2.0 * f);
-        
-        float a = random(i);
-        float b = random(i + vec2(1.0, 0.0));
-        float c = random(i + vec2(0.0, 1.0));
-        float d = random(i + vec2(1.0, 1.0));
-        
-        return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-    }
-    
     vec3 geometricPattern(vec2 uv) {
         float scale = 8.0;
         vec2 p = uv * scale;
         
         float pattern = 0.0;
         pattern += sin(p.x * 2.0) * sin(p.y * 2.0);
-        pattern += sin(p.x * 4.0 + u_time) * 0.5;
-        pattern += noise(p + u_time * 0.1) * 0.3;
+        pattern += sin(p.x * 4.0) * 0.5;
         
         float lines = abs(fract(p.x * 0.5) - 0.5) + abs(fract(p.y * 0.5) - 0.5);
         pattern = mix(pattern, lines, 0.3);
@@ -108,28 +86,6 @@ const fragmentShaderSource = `
         vec3 specular = vec3(1.0) * spec * 0.8;
         
         return diffuse + specular;
-    }
-    
-    float calculateSSAO(vec3 pos, vec3 normal) {
-        float occlusion = 0.0;
-        const int samples = 16;
-        
-        for (int i = 0; i < samples; i++) {
-            float fi = float(i);
-            float angle = fi * 6.28318 / float(samples);
-            vec2 offset = vec2(cos(angle), sin(angle)) * u_ssaoRadius;
-            vec3 samplePos = pos + vec3(offset.x, offset.y, 0.0) * random(pos.xy + fi);
-            
-            // Simple depth comparison approximation
-            float depth = length(samplePos - u_cameraPos);
-            float currentDepth = length(pos - u_cameraPos);
-            
-            if (depth < currentDepth) {
-                occlusion += 1.0;
-            }
-        }
-        
-        return 1.0 - (occlusion / float(samples)) * u_ssaoIntensity;
     }
     
     void main() {
@@ -152,10 +108,7 @@ const fragmentShaderSource = `
         vec3 ambient = color * 0.3;
         vec3 diffuse = color * NdotL * 0.7;
         
-        // SSAO
-        float ssao = calculateSSAO(v_worldPos, normal);
-        
-        color = (ambient + diffuse) * ssao;
+        color = ambient + diffuse;
         
         gl_FragColor = vec4(color, 1.0);
     }
@@ -608,16 +561,12 @@ function render() {
     const lightDirLoc = gl.getUniformLocation(shaderProgram, 'u_lightDirection');
     const cameraPosLoc = gl.getUniformLocation(shaderProgram, 'u_cameraPos');
     const timeLoc = gl.getUniformLocation(shaderProgram, 'u_time');
-    const ssaoRadiusLoc = gl.getUniformLocation(shaderProgram, 'u_ssaoRadius');
-    const ssaoIntensityLoc = gl.getUniformLocation(shaderProgram, 'u_ssaoIntensity');
     
     gl.uniformMatrix4fv(projectionLoc, false, projectionMatrix);
     gl.uniformMatrix4fv(viewLoc, false, viewMatrix);
     gl.uniform3f(lightDirLoc, 1.0, -1.0, -1.0);
     gl.uniform3f(cameraPosLoc, cameraPos[0], cameraPos[1], cameraPos[2]);
     gl.uniform1f(timeLoc, gameState.time);
-    gl.uniform1f(ssaoRadiusLoc, 0.5);
-    gl.uniform1f(ssaoIntensityLoc, 0.3);
     
     // Render tunnel
     renderTunnel();
