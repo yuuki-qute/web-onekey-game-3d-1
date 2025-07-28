@@ -565,6 +565,12 @@ function setupInput() {
     });
 }
 
+// Calculate difficulty multiplier based on score
+function getDifficultyMultiplier() {
+    const progressFactor = gameState.score / 1000;
+    return 1 + progressFactor;
+}
+
 // Game logic
 function updateGame(deltaTime) {
     if (gameState.showTitle) {
@@ -615,14 +621,14 @@ function updateGame(deltaTime) {
     
     // Spawn obstacles with increasing frequency based on progress
     const baseSpawnRate = 0.01;
-    const progressFactor = Math.min(gameState.score / 1000, 3.0); // Max 3x increase at score 1000
-    const currentSpawnRate = baseSpawnRate * (1 + progressFactor);
+    const difficultyMultiplier = getDifficultyMultiplier();
+    const currentSpawnRate = baseSpawnRate * difficultyMultiplier;
     
     if (Math.random() < currentSpawnRate) {
         obstacles.push({
             x: (Math.random() - 0.5) * 3,
             y: (Math.random() - 0.5) * 3,
-            z: cameraPos[2] + 20,
+            z: cameraPos[2] + 40,
             rotationX: Math.random() * Math.PI * 2,
             rotationY: Math.random() * Math.PI * 2,
             rotationZ: Math.random() * Math.PI * 2,
@@ -672,6 +678,10 @@ function updateUI() {
     
     const highScore = parseInt(localStorage.getItem('highScore') || '0');
     document.getElementById('highScore').textContent = highScore;
+    
+    // Display difficulty using shared calculation
+    const difficultyMultiplier = getDifficultyMultiplier();
+    document.getElementById('difficulty').textContent = difficultyMultiplier.toFixed(1) + 'x';
 }
 
 function showDamageFlash() {
