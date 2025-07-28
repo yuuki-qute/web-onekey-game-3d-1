@@ -138,6 +138,23 @@ function initGL() {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
     
+    // モバイルデバイスの向き変更対応
+    window.addEventListener('orientationchange', () => {
+        // 向き変更後、少し遅延してリサイズを実行
+        setTimeout(resizeCanvas, 100);
+    });
+    
+    // デバイスピクセル比の変更対応（外部モニター接続時など）
+    if (window.matchMedia) {
+        const mediaQuery = window.matchMedia('(resolution: 1dppx)');
+        if (mediaQuery.addEventListener) {
+            mediaQuery.addEventListener('change', resizeCanvas);
+        } else {
+            // 古いブラウザ対応
+            mediaQuery.addListener(resizeCanvas);
+        }
+    }
+    
     // Enable depth testing
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
@@ -253,9 +270,31 @@ function playMelody(type = 'start') {
 }
 
 function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    gl.viewport(0, 0, canvas.width, canvas.height);
+    // デバイスピクセル比を取得（Retina等の高解像度ディスプレイ対応）
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    
+    // 表示サイズ（CSS pixels）
+    const displayWidth = window.innerWidth;
+    const displayHeight = window.innerHeight;
+    
+    // 実際の描画解像度（device pixels）
+    const drawingBufferWidth = Math.floor(displayWidth * devicePixelRatio);
+    const drawingBufferHeight = Math.floor(displayHeight * devicePixelRatio);
+    
+    // Canvasの表示サイズを設定（CSS）
+    canvas.style.width = displayWidth + 'px';
+    canvas.style.height = displayHeight + 'px';
+    
+    // Canvasの描画バッファサイズを設定（実際の解像度）
+    if (canvas.width !== drawingBufferWidth || canvas.height !== drawingBufferHeight) {
+        canvas.width = drawingBufferWidth;
+        canvas.height = drawingBufferHeight;
+        
+        // WebGLビューポートを更新
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        
+        console.log(`Canvas resized: Display ${displayWidth}x${displayHeight}, Buffer ${drawingBufferWidth}x${drawingBufferHeight}, DPR: ${devicePixelRatio}`);
+    }
 }
 
 // Shader utilities

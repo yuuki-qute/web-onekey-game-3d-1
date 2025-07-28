@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>3D Tunnel Runner</title>
     
     <!-- OGP (Open Graph Protocol) メタタグ -->
@@ -55,6 +55,11 @@
             display: block;
             width: 100vw;
             height: 100vh;
+            /* 高解像度ディスプレイでのスムージング無効化 */
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
             /* モバイルでのコンテキストメニュー抑制 */
             -webkit-touch-callout: none;
             -webkit-user-select: none;
