@@ -462,8 +462,12 @@ function updateGame(deltaTime) {
     // Increase speed over time
     gameState.speed = 0.02 + gameState.time * 0.00001;
     
-    // Spawn obstacles
-    if (Math.random() < 0.01) {
+    // Spawn obstacles with increasing frequency based on progress
+    const baseSpawnRate = 0.01;
+    const progressFactor = Math.min(gameState.score / 1000, 3.0); // Max 3x increase at score 1000
+    const currentSpawnRate = baseSpawnRate * (1 + progressFactor);
+    
+    if (Math.random() < currentSpawnRate) {
         obstacles.push({
             x: (Math.random() - 0.5) * 3,
             y: (Math.random() - 0.5) * 3,
