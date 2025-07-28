@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Tunnel Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: black;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        .ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 100;
+            color: white;
+            pointer-events: none;
+        }
+        
+        .life-bar {
+            width: 300px;
+            height: 20px;
+            border: 2px solid white;
+            margin-bottom: 10px;
+        }
+        
+        .life-fill {
+            height: 100%;
+            background: linear-gradient(to right, red, yellow, green);
+            transition: width 0.3s ease;
+        }
+        
+        .score {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .high-score {
+            font-size: 18px;
+            margin-top: 5px;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 30px;
+            border-radius: 10px;
+            pointer-events: auto;
+        }
+        
+        .game-over h1 {
+            color: red;
+            margin-bottom: 20px;
+        }
+        
+        .game-over button {
+            padding: 10px 20px;
+            font-size: 18px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .game-over button:hover {
+            background: #45a049;
+        }
+        
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div class="ui">
+        <div class="life-bar">
+            <div class="life-fill" id="lifeFill" style="width: 100%;"></div>
+        </div>
+        <div class="score">スコア: <span id="score">0</span></div>
+        <div class="high-score">ハイスコア: <span id="highScore">0</span></div>
+    </div>
+    
+    <div class="instructions">
+        スペースキー: 上昇 / 離す: 下降
+    </div>
+    
+    <div class="game-over" id="gameOver" style="display: none;">
+        <h1>ゲームオーバー</h1>
+        <p>スコア: <span id="finalScore">0</span></p>
+        <p>ハイスコア: <span id="finalHighScore">0</span></p>
+        <button onclick="restartGame()">もう一度プレイ</button>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
