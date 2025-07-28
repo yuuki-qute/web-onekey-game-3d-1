@@ -573,6 +573,12 @@ function setupInput() {
     // Mouse input
     document.addEventListener('mousedown', (e) => {
         e.preventDefault();
+        
+        // Check if click is on fullscreen button
+        if (e.target.id === 'fullscreenBtn') {
+            return; // Don't start game if fullscreen button was clicked
+        }
+        
         keys['MouseClick'] = true;
         if (gameState.showTitle) {
             startGame();
@@ -587,6 +593,12 @@ function setupInput() {
     // Touch input for mobile devices
     document.addEventListener('touchstart', (e) => {
         e.preventDefault();
+        
+        // Check if touch is on fullscreen button
+        if (e.target.id === 'fullscreenBtn') {
+            return; // Don't start game if fullscreen button was touched
+        }
+        
         keys['Touch'] = true;
         if (gameState.showTitle) {
             startGame();
@@ -721,6 +733,14 @@ function updateUI() {
     // Display difficulty using shared calculation
     const difficultyMultiplier = getDifficultyMultiplier();
     document.getElementById('difficulty').textContent = difficultyMultiplier.toFixed(1) + 'x';
+    
+    // Hide difficulty display on title screen
+    const difficultyElement = document.querySelector('.difficulty');
+    if (gameState.showTitle) {
+        difficultyElement.style.display = 'none';
+    } else {
+        difficultyElement.style.display = 'block';
+    }
 }
 
 function showDamageFlash() {
@@ -751,12 +771,23 @@ function showTitleScreen() {
     document.getElementById('titleHighScore').textContent = highScore;
     document.getElementById('titleScreen').style.display = 'block';
     document.getElementById('gameOver').style.display = 'none';
+    
+    // Hide difficulty display on title screen
+    const difficultyElement = document.querySelector('.difficulty');
+    difficultyElement.style.display = 'none';
+    
+    updateFullscreenButton();
 }
 
 function startGame() {
     gameState.showTitle = false;
     gameState.gameRunning = true;
     document.getElementById('titleScreen').style.display = 'none';
+    
+    // Show difficulty display when game starts
+    const difficultyElement = document.querySelector('.difficulty');
+    difficultyElement.style.display = 'block';
+    
     updateUI();
 }
 
@@ -938,6 +969,14 @@ function init() {
     // Setup input
     setupInput();
     
+    // Setup fullscreen button event listener (once)
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    fullscreenBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        toggleFullscreen();
+    });
+    
     // Show title screen initially
     showTitleScreen();
     
@@ -947,3 +986,50 @@ function init() {
 
 // Start the game when page loads
 window.addEventListener('load', init);
+
+// Fullscreen functionality
+function toggleFullscreen() {
+    if (!document.fullscreenElement && !document.mozFullScreenElement && 
+        !document.webkitFullscreenElement && !document.msFullscreenElement) {
+        // Enter fullscreen
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen();
+        } else if (elem.mozRequestFullScreen) {
+            elem.mozRequestFullScreen();
+        } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) {
+            elem.msRequestFullscreen();
+        }
+    } else {
+        // Exit fullscreen
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+    }
+}
+
+function updateFullscreenButton() {
+    const btn = document.getElementById('fullscreenBtn');
+    const isFullscreen = document.fullscreenElement || document.mozFullScreenElement || 
+                        document.webkitFullscreenElement || document.msFullscreenElement;
+    
+    if (isFullscreen) {
+        btn.textContent = '⛶ Exit Fullscreen';
+    } else {
+        btn.textContent = '⛶ Fullscreen';
+    }
+}
+
+// Listen for fullscreen changes
+document.addEventListener('fullscreenchange', updateFullscreenButton);
+document.addEventListener('mozfullscreenchange', updateFullscreenButton);
+document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+document.addEventListener('msfullscreenchange', updateFullscreenButton);

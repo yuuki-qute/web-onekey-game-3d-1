@@ -68,7 +68,8 @@
             letter-spacing: 1px;
             position: absolute;
             top: 20px;
-            right: 20px;
+            left: 50%;
+            transform: translateX(-50%);
         }
         
         .game-over {
@@ -199,6 +200,31 @@
             0%, 50% { opacity: 1; }
             51%, 100% { opacity: 0.3; }
         }
+        
+        .fullscreen-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 500;
+            background: rgba(0, 255, 0, 0.2);
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-family: 'Courier New', 'Monaco', 'Lucida Console', monospace;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px #00ff00;
+            pointer-events: auto;
+        }
+        
+        .fullscreen-btn:hover {
+            background: rgba(0, 255, 0, 0.4);
+            box-shadow: 0 0 20px #00ff00;
+        }
     </style>
 </head>
 <body>
@@ -214,6 +240,9 @@
         <div class="high-score">High Score: <span id="titleHighScore">0</span></div>
         <div class="start-prompt">Press Space / Click / Touch to Start</div>
     </div>
+    
+    <!-- Fullscreen button (always visible in top-right) -->
+    <button class="fullscreen-btn" id="fullscreenBtn">⛶ Fullscreen</button>
     
     <div class="ui">
         <div class="life-bar">
