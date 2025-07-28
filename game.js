@@ -7,7 +7,8 @@ let gameState = {
     speed: 0.02,
     playerY: 0,
     playerVelocity: 0,
-    gameRunning: true,
+    gameRunning: false,
+    showTitle: true,
     time: 0
 };
 
@@ -421,6 +422,9 @@ function setupInput() {
         keys[e.code] = true;
         if (e.code === 'Space') {
             e.preventDefault();
+            if (gameState.showTitle) {
+                startGame();
+            }
         }
     });
     
@@ -432,6 +436,9 @@ function setupInput() {
     document.addEventListener('mousedown', (e) => {
         e.preventDefault();
         keys['MouseClick'] = true;
+        if (gameState.showTitle) {
+            startGame();
+        }
     });
     
     document.addEventListener('mouseup', (e) => {
@@ -443,6 +450,9 @@ function setupInput() {
     document.addEventListener('touchstart', (e) => {
         e.preventDefault();
         keys['Touch'] = true;
+        if (gameState.showTitle) {
+            startGame();
+        }
     });
     
     document.addEventListener('touchend', (e) => {
@@ -458,6 +468,12 @@ function setupInput() {
 
 // Game logic
 function updateGame(deltaTime) {
+    if (gameState.showTitle) {
+        // Show title screen, wait for input to start
+        showTitleScreen();
+        return;
+    }
+    
     if (!gameState.gameRunning) return;
     
     gameState.time += deltaTime;
@@ -575,6 +591,20 @@ function showGameOver() {
     document.getElementById('gameOver').style.display = 'block';
 }
 
+function showTitleScreen() {
+    const highScore = parseInt(localStorage.getItem('highScore') || '0');
+    document.getElementById('titleHighScore').textContent = highScore;
+    document.getElementById('titleScreen').style.display = 'block';
+    document.getElementById('gameOver').style.display = 'none';
+}
+
+function startGame() {
+    gameState.showTitle = false;
+    gameState.gameRunning = true;
+    document.getElementById('titleScreen').style.display = 'none';
+    updateUI();
+}
+
 function restartGame() {
     gameState = {
         life: 100,
@@ -582,7 +612,8 @@ function restartGame() {
         speed: 0.02,
         playerY: 0,
         playerVelocity: 0,
-        gameRunning: true,
+        gameRunning: false,
+        showTitle: true,
         time: 0
     };
     
@@ -590,7 +621,7 @@ function restartGame() {
     obstacles = [];
     
     document.getElementById('gameOver').style.display = 'none';
-    updateUI();
+    showTitleScreen();
 }
 
 // Rendering
@@ -742,8 +773,8 @@ function init() {
     // Setup input
     setupInput();
     
-    // Load high score
-    updateUI();
+    // Show title screen initially
+    showTitleScreen();
     
     // Start game loop
     requestAnimationFrame(gameLoop);
