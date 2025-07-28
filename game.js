@@ -986,11 +986,6 @@ function startGame() {
 }
 
 function restartGame() {
-    // オーディオコンテキストを再開（モバイル対応）
-    if (audioContext && audioContext.state === 'suspended') {
-        audioContext.resume();
-    }
-    
     gameState = {
         life: 100,
         score: 0,
@@ -1201,40 +1196,6 @@ function init() {
         e.stopPropagation();
         e.preventDefault();
         toggleFullscreen();
-    });
-    
-    // Setup Play Again button event listener (モバイル対応)
-    const playAgainBtn = document.getElementById('playAgainBtn');
-    
-    // クリックイベント（デスクトップ）
-    playAgainBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        e.preventDefault();
-        restartGame();
-    });
-    
-    // タッチイベント（モバイル）
-    playAgainBtn.addEventListener('touchstart', function(e) {
-        e.stopPropagation();
-        e.preventDefault();
-    }, { passive: false });
-    
-    playAgainBtn.addEventListener('touchend', function(e) {
-        e.stopPropagation();
-        e.preventDefault();
-        restartGame();
-    }, { passive: false });
-    
-    // マウスイベント（追加の安全策）
-    playAgainBtn.addEventListener('mousedown', function(e) {
-        e.stopPropagation();
-        e.preventDefault();
-    });
-    
-    playAgainBtn.addEventListener('mouseup', function(e) {
-        e.stopPropagation();
-        e.preventDefault();
-        restartGame();
     });
     
     // Show title screen initially

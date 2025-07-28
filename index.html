@@ -171,33 +171,11 @@
             font-weight: bold;
             box-shadow: 0 0 10px #00ff00;
             transition: all 0.3s ease;
-            /* モバイルタッチ対応 */
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-            /* ボタンサイズをモバイルで見やすく */
-            min-height: 44px;
-            min-width: 120px;
         }
         
-        .game-over button:hover,
-        .game-over button:active,
-        .game-over button:focus {
+        .game-over button:hover {
             background: #ffff00;
             box-shadow: 0 0 20px #ffff00;
-            outline: none;
-        }
-        
-        /* モバイル専用スタイル */
-        @media (hover: none) and (pointer: coarse) {
-            .game-over button {
-                padding: 15px 25px;
-                font-size: 20px;
-                min-height: 50px;
-                min-width: 140px;
-            }
         }
         
         .instructions {
@@ -339,7 +317,7 @@
         <h1>Game Over</h1>
         <p>Score: <span id="finalScore">0</span></p>
         <p>High Score: <span id="finalHighScore">0</span></p>
-        <button id="playAgainBtn">Play Again</button>
+        <button onclick="restartGame()">Play Again</button>
     </div>
 
     <script src="game.js"></script>
