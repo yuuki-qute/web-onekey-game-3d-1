@@ -469,15 +469,23 @@ function updateGame(deltaTime) {
         gameState.playerVelocity -= 0.002;
     }
     
-    gameState.playerVelocity = Math.max(-0.02, Math.min(0.02, gameState.playerVelocity));
+	gameState.playerVelocity = Math.max(-0.06, Math.min(0.06, gameState.playerVelocity));
     gameState.playerY += gameState.playerVelocity;
     
     // Wall collision
     if (gameState.playerY > 1.8 || gameState.playerY < -1.8) {
         gameState.life = Math.max(0, gameState.life - 5);
         showDamageFlash();
+
+        // Bounce effect - reverse velocity with some damping
+        if (gameState.playerY > 0) {
+            gameState.playerVelocity = -0.06;
+        } else {
+            gameState.playerVelocity = 0.06;
+        }
+
+        // Keep player within bounds
         gameState.playerY = Math.max(-1.8, Math.min(1.8, gameState.playerY));
-        gameState.playerVelocity = 0;
     }
     
     // Update camera position
