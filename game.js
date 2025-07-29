@@ -18,6 +18,7 @@ let keys = {};
 
 // Geometry buffers
 let tunnelBuffer, obstacleBuffers = [];
+let playerBuffer;
 let obstacles = [];
 
 // Camera and matrices
@@ -701,6 +702,159 @@ function createIcosahedron() {
     };
 }
 
+// Create fighter spacecraft model
+function createFighter() {
+    const positions = [];
+    const normals = [];
+    const texCoords = [];
+    const indices = [];
+    
+    // Fighter spacecraft vertices (simplified geometric shape)
+    // Main fuselage (elongated diamond shape)
+    const vertices = [
+        // Front nose (0)
+        [0.0, 0.0, 1.2],
+        
+        // Main body vertices (1-8)
+        [0.0, 0.15, 0.6],   // top front (1)
+        [0.0, -0.1, 0.6],   // bottom front (2)
+        [0.2, 0.0, 0.6],    // right front (3)
+        [-0.2, 0.0, 0.6],   // left front (4)
+        
+        [0.0, 0.1, -0.2],   // top rear (5)
+        [0.0, -0.08, -0.2], // bottom rear (6)
+        [0.15, 0.0, -0.2],  // right rear (7)
+        [-0.15, 0.0, -0.2], // left rear (8)
+        
+        // Wing tips (9-12)
+        [0.6, 0.0, 0.0],    // right wing tip (9)
+        [-0.6, 0.0, 0.0],   // left wing tip (10)
+        [0.4, 0.0, -0.4],   // right wing rear (11)
+        [-0.4, 0.0, -0.4],  // left wing rear (12)
+        
+        // Engine exhausts (13-14)
+        [0.08, 0.0, -0.8],  // right engine (13)
+        [-0.08, 0.0, -0.8], // left engine (14)
+    ];
+    
+    // Convert vertices to flat array
+    vertices.forEach(v => {
+        positions.push(v[0], v[1], v[2]);
+        texCoords.push(0.5, 0.5); // Simple UV mapping
+    });
+    
+    // Define triangular faces for the fighter
+    const faces = [
+        // Nose section
+        [0, 1, 3], [0, 3, 2], [0, 2, 4], [0, 4, 1],
+        
+        // Main fuselage
+        [1, 5, 3], [3, 5, 7], [7, 5, 6], [6, 2, 7], [7, 2, 3],
+        [2, 6, 4], [4, 6, 8], [8, 6, 5], [5, 1, 8], [8, 1, 4],
+        
+        // Wings
+        [3, 7, 9], [7, 11, 9],
+        [4, 10, 8], [8, 10, 12],
+        
+        // Wing connections
+        [7, 13, 11], [8, 12, 14],
+        
+        // Bottom panels
+        [2, 13, 7], [6, 13, 2], [6, 14, 13], [6, 8, 14],
+        
+        // Engine exhausts
+        [13, 14, 6], [5, 13, 6], [5, 14, 13] // Simplified engine area
+    ];
+    
+    // Calculate normals and build final arrays
+    faces.forEach(face => {
+        const [i1, i2, i3] = face;
+        
+        // Get vertices
+        const v1 = vertices[i1];
+        const v2 = vertices[i2];
+        const v3 = vertices[i3];
+        
+        // Calculate face normal
+        const edge1 = [v2[0] - v1[0], v2[1] - v1[1], v2[2] - v1[2]];
+        const edge2 = [v3[0] - v1[0], v3[1] - v1[1], v3[2] - v1[2]];
+        
+        const normal = [
+            edge1[1] * edge2[2] - edge1[2] * edge2[1],
+            edge1[2] * edge2[0] - edge1[0] * edge2[2],
+            edge1[0] * edge2[1] - edge1[1] * edge2[0]
+        ];
+        
+        // Normalize
+        const length = Math.sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
+        if (length > 0) {
+            normal[0] /= length;
+            normal[1] /= length;
+            normal[2] /= length;
+        }
+        
+        // Add vertices and normals for this face
+        const baseIndex = indices.length;
+        
+        [v1, v2, v3].forEach(v => {
+            positions.push(v[0], v[1], v[2]);
+            normals.push(normal[0], normal[1], normal[2]);
+            texCoords.push(0.5, 0.5);
+        });
+        
+        indices.push(baseIndex, baseIndex + 1, baseIndex + 2);
+    });
+    
+    // Create wireframe edges
+    const edges = new Set();
+    for (let i = 0; i < indices.length; i += 3) {
+        const a = indices[i];
+        const b = indices[i + 1];
+        const c = indices[i + 2];
+        
+        edges.add(Math.min(a, b) + ',' + Math.max(a, b));
+        edges.add(Math.min(b, c) + ',' + Math.max(b, c));
+        edges.add(Math.min(c, a) + ',' + Math.max(c, a));
+    }
+    
+    const wireframeIndices = [];
+    edges.forEach(edge => {
+        const [a, b] = edge.split(',').map(Number);
+        wireframeIndices.push(a, b);
+    });
+    
+    // Create buffers
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+    
+    const normalBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+    
+    const texCoordBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
+    
+    const indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+    
+    const wireframeIndexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, wireframeIndexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(wireframeIndices), gl.STATIC_DRAW);
+    
+    return {
+        position: positionBuffer,
+        normal: normalBuffer,
+        texCoord: texCoordBuffer,
+        indices: indexBuffer,
+        indexCount: indices.length,
+        wireframeIndices: wireframeIndexBuffer,
+        wireframeIndexCount: wireframeIndices.length
+    };
+}
+
 // Input handling
 function setupInput() {
     document.addEventListener('keydown', (e) => {
@@ -1035,6 +1189,9 @@ function render() {
     // Render tunnel
     renderTunnel();
     
+    // Render player fighter
+    renderPlayer();
+    
     // Render obstacles
     renderObstacles();
 }
@@ -1132,6 +1289,60 @@ function renderObstacles() {
     });
 }
 
+function renderPlayer() {
+    if (!playerBuffer) return;
+    
+    const modelLoc = gl.getUniformLocation(shaderProgram, 'u_modelMatrix');
+    const normalLoc = gl.getUniformLocation(shaderProgram, 'u_normalMatrix');
+    const materialLoc = gl.getUniformLocation(shaderProgram, 'u_materialType');
+    
+    const positionLoc = gl.getAttribLocation(shaderProgram, 'a_position');
+    const normalLoc2 = gl.getAttribLocation(shaderProgram, 'a_normal');
+    const texCoordLoc = gl.getAttribLocation(shaderProgram, 'a_texCoord');
+    
+    // Create model matrix for player (centered at camera position but slightly in front)
+    const modelMatrix = createMatrix4();
+    identity(modelMatrix);
+    
+    // Position player at camera position but slightly forward for visibility
+    translate(modelMatrix, modelMatrix, [0, gameState.playerY, cameraPos[2] + 0.5]);
+    
+    // Scale down the fighter model
+    scale(modelMatrix, modelMatrix, [0.15, 0.15, 0.15]);
+    
+    // Add slight banking effect based on movement
+    const bankingAngle = gameState.playerVelocity * 2; // Banking based on vertical velocity
+    rotateZ(modelMatrix, modelMatrix, bankingAngle);
+    
+    gl.uniformMatrix4fv(modelLoc, false, modelMatrix);
+    gl.uniformMatrix4fv(normalLoc, false, modelMatrix);
+    
+    // Bind player geometry
+    gl.bindBuffer(gl.ARRAY_BUFFER, playerBuffer.position);
+    gl.enableVertexAttribArray(positionLoc);
+    gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 0, 0);
+    
+    gl.bindBuffer(gl.ARRAY_BUFFER, playerBuffer.normal);
+    gl.enableVertexAttribArray(normalLoc2);
+    gl.vertexAttribPointer(normalLoc2, 3, gl.FLOAT, false, 0, 0);
+    
+    gl.bindBuffer(gl.ARRAY_BUFFER, playerBuffer.texCoord);
+    gl.enableVertexAttribArray(texCoordLoc);
+    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 0, 0);
+    
+    // First pass: Draw filled polygons with player-specific material
+    gl.uniform1i(materialLoc, 1); // Metal material for main body
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, playerBuffer.indices);
+    gl.drawElements(gl.TRIANGLES, playerBuffer.indexCount, gl.UNSIGNED_SHORT, 0);
+    
+    // Second pass: Draw wireframe edges in bright green
+    if (playerBuffer.wireframeIndices) {
+        gl.uniform1i(materialLoc, 2); // Bright green wireframe material
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, playerBuffer.wireframeIndices);
+        gl.drawElements(gl.LINES, playerBuffer.wireframeIndexCount, gl.UNSIGNED_SHORT, 0);
+    }
+}
+
 // Main game loop
 let lastTime = 0;
 function gameLoop(currentTime) {
@@ -1162,6 +1373,7 @@ function init() {
     // Create geometry
     tunnelBuffer = createTunnel();
     obstacleBuffers.push(createIcosahedron());
+    playerBuffer = createFighter();
     
     // Setup input
     setupInput();
