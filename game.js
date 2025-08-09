@@ -1025,9 +1025,9 @@ function updateGame(deltaTime) {
             rotationX: Math.random() * Math.PI * 2,
             rotationY: Math.random() * Math.PI * 2,
             rotationZ: Math.random() * Math.PI * 2,
-            rotationSpeedX: (Math.random() - 0.5) * 0.004,
-            rotationSpeedY: (Math.random() - 0.5) * 0.004,
-            rotationSpeedZ: (Math.random() - 0.5) * 0.004
+            rotationSpeedX: (Math.random() - 0.5) * 0.004 * 16,
+            rotationSpeedY: (Math.random() - 0.5) * 0.004 * 16,
+            rotationSpeedZ: (Math.random() - 0.5) * 0.004 * 16
         });
     }
     
