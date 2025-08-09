@@ -1038,9 +1038,10 @@ function updateGame(deltaTime) {
         obstacle.rotationZ += obstacle.rotationSpeedZ * (deltaTime / 16.67); // Normalize to 60fps
         
         // Check collision with player
+        // Player actual position: [0, gameState.playerY, cameraPos[2] + 0.5]
         const dx = obstacle.x - 0;
         const dy = obstacle.y - gameState.playerY;
-        const dz = obstacle.z - cameraPos[2];
+        const dz = obstacle.z - (cameraPos[2] + 0.5); // Match player render position
         const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
         
         if (distance < 0.5) {
