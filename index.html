@@ -185,6 +185,12 @@
             letter-spacing: 2px;
             animation: blink 1.5s ease-in-out infinite;
             cursor: pointer;
+            transition: opacity 0.3s ease;
+        }
+        
+        .restart-prompt.waiting {
+            animation: none;
+            opacity: 0.5;
         }
         
         .instructions {
@@ -326,7 +332,7 @@
         <h1>Game Over</h1>
         <p>Score: <span id="finalScore">0</span></p>
         <p>High Score: <span id="finalHighScore">0</span></p>
-        <div class="restart-prompt">Tap Screen to Play Again</div>
+        <div class="restart-prompt" style="visibility: hidden;">Tap Screen to Play Again</div>
     </div>
 
     <script src="game.js"></script>

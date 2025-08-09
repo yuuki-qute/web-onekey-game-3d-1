@@ -11,7 +11,8 @@ let gameState = {
     gameRunning: false,
     showTitle: true,
     time: 0,
-    waitingForRestart: false
+    waitingForRestart: false,
+    gameOverTime: 0
 };
 
 // Input
@@ -866,13 +867,40 @@ function createFighter() {
     };
 }
 
+// Helper function to check if restart is allowed
+function canRestartGame() {
+    return gameState.waitingForRestart && (Date.now() - gameState.gameOverTime) >= 2000; // 2 seconds delay
+}
+
+// Function to update restart message based on timer
+function updateRestartMessage() {
+    if (!gameState.waitingForRestart) return;
+    
+    const restartPrompt = document.querySelector('.restart-prompt');
+    if (!restartPrompt) return;
+    
+    if (canRestartGame()) {
+        restartPrompt.textContent = 'Tap Screen to Play Again';
+        restartPrompt.style.visibility = 'visible';
+        restartPrompt.classList.remove('waiting');
+    } else {
+        // Use same length text as placeholder to maintain width
+        restartPrompt.textContent = 'Tap Screen to Play Again';
+        restartPrompt.style.visibility = 'hidden';
+        restartPrompt.classList.add('waiting');
+        
+        // Continue updating until restart is allowed
+        setTimeout(updateRestartMessage, 100);
+    }
+}
+
 // Input handling
 function setupInput() {
     document.addEventListener('keydown', (e) => {
         keys[e.code] = true;
         if (e.code === 'Space') {
             e.preventDefault();
-            if (gameState.waitingForRestart) {
+            if (gameState.waitingForRestart && canRestartGame()) {
                 restartGame();
             } else if (gameState.showTitle) {
                 startGame();
@@ -894,7 +922,7 @@ function setupInput() {
         }
         
         keys['MouseClick'] = true;
-        if (gameState.waitingForRestart) {
+        if (gameState.waitingForRestart && canRestartGame()) {
             restartGame();
         } else if (gameState.showTitle) {
             startGame();
@@ -916,7 +944,7 @@ function setupInput() {
         }
         
         keys['Touch'] = true;
-        if (gameState.waitingForRestart) {
+        if (gameState.waitingForRestart && canRestartGame()) {
             restartGame();
         } else if (gameState.showTitle) {
             startGame();
@@ -1131,8 +1159,12 @@ function showGameOver() {
     const gameOverScreen = document.getElementById('gameOver');
     gameOverScreen.style.display = 'block';
     
-    // Add flag to indicate game over state
+    // Add flag to indicate game over state and record timestamp
     gameState.waitingForRestart = true;
+    gameState.gameOverTime = Date.now();
+    
+    // Start updating restart message
+    updateRestartMessage();
 }
 
 function showTitleScreen() {
@@ -1173,7 +1205,8 @@ function restartGame() {
         gameRunning: false,
         showTitle: true,
         time: 0,
-        waitingForRestart: false
+        waitingForRestart: false,
+        gameOverTime: 0
     };
     
     cameraPos = [0, 0, 0];
