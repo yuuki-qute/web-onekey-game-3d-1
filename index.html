@@ -178,6 +178,15 @@
             box-shadow: 0 0 20px #ffff00;
         }
         
+        .restart-prompt {
+            font-size: 20px;
+            margin-top: 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            animation: blink 1.5s ease-in-out infinite;
+            cursor: pointer;
+        }
+        
         .instructions {
             position: absolute;
             bottom: 20px;
@@ -317,7 +326,7 @@
         <h1>Game Over</h1>
         <p>Score: <span id="finalScore">0</span></p>
         <p>High Score: <span id="finalHighScore">0</span></p>
-        <button onclick="restartGame()">Play Again</button>
+        <div class="restart-prompt">Tap Screen to Play Again</div>
     </div>
 
     <script src="game.js"></script>

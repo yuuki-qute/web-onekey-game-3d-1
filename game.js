@@ -10,7 +10,8 @@ let gameState = {
     playerVelocity: 0,
     gameRunning: false,
     showTitle: true,
-    time: 0
+    time: 0,
+    waitingForRestart: false
 };
 
 // Input
@@ -871,7 +872,9 @@ function setupInput() {
         keys[e.code] = true;
         if (e.code === 'Space') {
             e.preventDefault();
-            if (gameState.showTitle) {
+            if (gameState.waitingForRestart) {
+                restartGame();
+            } else if (gameState.showTitle) {
                 startGame();
             }
         }
@@ -891,7 +894,9 @@ function setupInput() {
         }
         
         keys['MouseClick'] = true;
-        if (gameState.showTitle) {
+        if (gameState.waitingForRestart) {
+            restartGame();
+        } else if (gameState.showTitle) {
             startGame();
         }
     });
@@ -911,7 +916,9 @@ function setupInput() {
         }
         
         keys['Touch'] = true;
-        if (gameState.showTitle) {
+        if (gameState.waitingForRestart) {
+            restartGame();
+        } else if (gameState.showTitle) {
             startGame();
         }
     });
@@ -974,9 +981,11 @@ function getDifficultyMultiplier() {
 
 // Game logic
 function updateGame(deltaTime) {
-    if (gameState.showTitle) {
-        // Show title screen, wait for input to start
-        showTitleScreen();
+    if (gameState.showTitle || gameState.waitingForRestart) {
+        // Show title screen or waiting for restart, wait for input to start
+        if (gameState.showTitle) {
+            showTitleScreen();
+        }
         return;
     }
     
@@ -1119,7 +1128,11 @@ function showGameOver() {
     
     document.getElementById('finalScore').textContent = gameState.score;
     document.getElementById('finalHighScore').textContent = Math.max(highScore, gameState.score);
-    document.getElementById('gameOver').style.display = 'block';
+    const gameOverScreen = document.getElementById('gameOver');
+    gameOverScreen.style.display = 'block';
+    
+    // Add flag to indicate game over state
+    gameState.waitingForRestart = true;
 }
 
 function showTitleScreen() {
@@ -1159,7 +1172,8 @@ function restartGame() {
         playerVelocity: 0,
         gameRunning: false,
         showTitle: true,
-        time: 0
+        time: 0,
+        waitingForRestart: false
     };
     
     cameraPos = [0, 0, 0];
