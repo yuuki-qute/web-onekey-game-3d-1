@@ -1330,12 +1330,7 @@ function renderPlayer() {
     gl.enableVertexAttribArray(texCoordLoc);
     gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 0, 0);
     
-    // First pass: Draw filled polygons with player-specific material
-    gl.uniform1i(materialLoc, 1); // Metal material for main body
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, playerBuffer.indices);
-    gl.drawElements(gl.TRIANGLES, playerBuffer.indexCount, gl.UNSIGNED_SHORT, 0);
-    
-    // Second pass: Draw wireframe edges in bright green
+    // Draw wireframe edges only in bright green
     if (playerBuffer.wireframeIndices) {
         gl.uniform1i(materialLoc, 2); // Bright green wireframe material
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, playerBuffer.wireframeIndices);
