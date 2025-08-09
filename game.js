@@ -66,17 +66,18 @@ const fragmentShaderSource = `
     uniform int u_materialType; // 0: wall, 1: metal obstacle, 2: wireframe
     
     vec3 geometricPattern(vec2 uv) {
-        float scale = 8.0;
+        float scale = 4.0; // Larger scale for more visible checkers
         vec2 p = uv * scale;
         
-        float pattern = 0.0;
-        pattern += sin(p.x * 2.0) * sin(p.y * 2.0);
-        pattern += sin(p.x * 4.0) * 0.5;
+        // Create checkerboard pattern
+        vec2 grid = floor(p);
+        float checker = mod(grid.x + grid.y, 2.0);
         
-        float lines = abs(fract(p.x * 0.5) - 0.5) + abs(fract(p.y * 0.5) - 0.5);
-        pattern = mix(pattern, lines, 0.3);
+        // Define two colors for the checkerboard
+        vec3 color1 = vec3(0.2, 0.3, 0.6); // Dark blue
+        vec3 color2 = vec3(0.4, 0.5, 0.8); // Light blue
         
-        return vec3(0.3 + pattern * 0.2, 0.4 + pattern * 0.2, 0.7 + pattern * 0.2);
+        return mix(color1, color2, checker);
     }
     
     vec3 metalShading(vec3 normal, vec3 viewDir, vec3 lightDir) {
