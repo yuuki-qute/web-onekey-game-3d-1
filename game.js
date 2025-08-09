@@ -63,7 +63,8 @@ const fragmentShaderSource = `
     uniform vec3 u_lightDirection;
     uniform vec3 u_cameraPos;
     uniform float u_time;
-    uniform int u_materialType; // 0: wall, 1: metal obstacle, 2: wireframe
+    uniform int u_materialType; // 0: wall, 1: metal obstacle, 2: wireframe, 3: orange wireframe
+    uniform float u_proximityFactor; // 0.0 to 1.0 for proximity-based color blending
     
     vec3 geometricPattern(vec2 uv) {
         float scale = 4.0; // Larger scale for more visible checkers
@@ -89,7 +90,10 @@ const fragmentShaderSource = `
         vec3 diffuse = baseColor * NdotL;
         vec3 specular = vec3(1.0) * spec * 0.8;
         
-        return diffuse + specular;
+        // Add orange warning color based on proximity
+        vec3 warningColor = vec3(1.0, 0.4, 0.0) * u_proximityFactor * 0.5; // Orange warning tint
+        
+        return diffuse + specular + warningColor;
     }
     
     void main() {
@@ -108,6 +112,11 @@ const fragmentShaderSource = `
         } else if (u_materialType == 2) {
             // Bright green wireframe
             color = vec3(0.2, 1.0, 0.2);
+        } else if (u_materialType == 3) {
+            // Orange wireframe (proximity-based)
+            vec3 greenColor = vec3(0.2, 1.0, 0.2);
+            vec3 orangeColor = vec3(1.0, 0.6, 0.1);
+            color = mix(greenColor, orangeColor, u_proximityFactor);
         }
         
         // Basic lighting
@@ -116,7 +125,7 @@ const fragmentShaderSource = `
         vec3 diffuse = color * NdotL * 0.7;
         
         // Skip lighting for wireframe - keep it bright
-        if (u_materialType == 2) {
+        if (u_materialType == 2 || u_materialType == 3) {
             color = color; // Keep original bright color
         } else {
             color = ambient + diffuse;
@@ -1248,12 +1257,24 @@ function renderObstacles() {
     const modelLoc = gl.getUniformLocation(shaderProgram, 'u_modelMatrix');
     const normalLoc = gl.getUniformLocation(shaderProgram, 'u_normalMatrix');
     const materialLoc = gl.getUniformLocation(shaderProgram, 'u_materialType');
+    const proximityFactorLoc = gl.getUniformLocation(shaderProgram, 'u_proximityFactor');
     
     const positionLoc = gl.getAttribLocation(shaderProgram, 'a_position');
     const normalLoc2 = gl.getAttribLocation(shaderProgram, 'a_normal');
     const texCoordLoc = gl.getAttribLocation(shaderProgram, 'a_texCoord');
     
     obstacles.forEach(obstacle => {
+        // Calculate distance to player for proximity-based color change (Z-axis only)
+        const dz = obstacle.z - (cameraPos[2] + 0.5);
+        const distance = Math.abs(dz); // Only Z-axis distance
+        
+        // Calculate proximity factor (0.0 = far, 1.0 = very close)
+        const proximityDistance = 4.0; // 8 times collision distance (0.5 * 8) - doubled from 2.0
+        let proximityFactor = Math.max(0.0, Math.min(1.0, 1.0 - (distance / proximityDistance)));
+        
+        // Apply 4x speed curve and saturate at 100%
+        proximityFactor = Math.pow(proximityFactor, 0.25); // 4x faster fade (1/4 power)
+        
         const modelMatrix = createMatrix4();
         identity(modelMatrix);
         translate(modelMatrix, modelMatrix, [obstacle.x, obstacle.y, obstacle.z]);
@@ -1279,12 +1300,21 @@ function renderObstacles() {
         
         // First pass: Draw filled polygons
         gl.uniform1i(materialLoc, 1); // Metal material for faces
+        gl.uniform1f(proximityFactorLoc, proximityFactor); // Set proximity factor for metal shading
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obstacleBuffers[0].indices);
         gl.drawElements(gl.TRIANGLES, obstacleBuffers[0].indexCount, gl.UNSIGNED_SHORT, 0);
         
-        // Second pass: Draw wireframe edges
+        // Second pass: Draw wireframe edges with proximity-based color
         if (obstacleBuffers[0].wireframeIndices) {
-            gl.uniform1i(materialLoc, 2); // Wireframe material
+            if (proximityFactor > 0.0) {
+                // Use orange wireframe material with proximity factor
+                gl.uniform1i(materialLoc, 3);
+                gl.uniform1f(proximityFactorLoc, proximityFactor);
+            } else {
+                // Use standard green wireframe material
+                gl.uniform1i(materialLoc, 2);
+                gl.uniform1f(proximityFactorLoc, 0.0);
+            }
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obstacleBuffers[0].wireframeIndices);
             gl.drawElements(gl.LINES, obstacleBuffers[0].wireframeIndexCount, gl.UNSIGNED_SHORT, 0);
         }
