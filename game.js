@@ -976,13 +976,13 @@ function updateGame(deltaTime) {
     
     // Player movement
     if (keys['Space'] || keys['Touch'] || keys['MouseClick']) {
-        gameState.playerVelocity += 0.002;
+        gameState.playerVelocity += 0.002 * (deltaTime / 16.67); // Normalize to 60fps
     } else {
-        gameState.playerVelocity -= 0.002;
+        gameState.playerVelocity -= 0.002 * (deltaTime / 16.67); // Normalize to 60fps
     }
     
 	gameState.playerVelocity = Math.max(-0.06, Math.min(0.06, gameState.playerVelocity));
-    gameState.playerY += gameState.playerVelocity;
+    gameState.playerY += gameState.playerVelocity * (deltaTime / 16.67); // Normalize to 60fps
     
     // Wall collision
     if (gameState.playerY > 1.8 || gameState.playerY < -1.8) {
@@ -1003,7 +1003,7 @@ function updateGame(deltaTime) {
     
     // Update camera position
     cameraPos[1] = gameState.playerY;
-    cameraPos[2] += gameState.speed;
+    cameraPos[2] += gameState.speed * (deltaTime / 16.67); // Normalize to 60fps
     
     // Update score
     gameState.score = Math.floor(cameraPos[2] * 10);
@@ -1032,9 +1032,9 @@ function updateGame(deltaTime) {
     
     // Update obstacles
     obstacles.forEach((obstacle, index) => {
-        obstacle.rotationX += obstacle.rotationSpeedX * deltaTime;
-        obstacle.rotationY += obstacle.rotationSpeedY * deltaTime;
-        obstacle.rotationZ += obstacle.rotationSpeedZ * deltaTime;
+        obstacle.rotationX += obstacle.rotationSpeedX * (deltaTime / 16.67); // Normalize to 60fps
+        obstacle.rotationY += obstacle.rotationSpeedY * (deltaTime / 16.67); // Normalize to 60fps
+        obstacle.rotationZ += obstacle.rotationSpeedZ * (deltaTime / 16.67); // Normalize to 60fps
         
         // Check collision with player
         const dx = obstacle.x - 0;
